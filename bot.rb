@@ -7,6 +7,7 @@ require 'json'
 load './config.ru'
 
 team = TEAM_ID
+team_short = TEAM_SHORT
 season = SEASON
 channel = SLACK_CHANNEL
 
@@ -74,6 +75,9 @@ teamsum = JSON.load(get_season(team,season))
 games_source = File.open('games.json', 'r')
 games = JSON.load(games_source)
 games_source.close
+record_source = File.open('record.json','r')
+record = JSON.load(record_source)
+record_source.close
 
 client = Slack::Web::Client.new
 client.auth_test
@@ -100,8 +104,30 @@ teamsum["resultSets"][0]["rowSet"].each do |game|
 		team2q3 = "#{team2arr[10]}" + " " * check_quarter(team2arr[10]) + "|"
 		team2q4 = "#{team2arr[11]}" + " " * check_quarter(team2arr[11]) + "|"
 		team2f = "#{team2arr[-1]}" + " " * check_final(team2arr[-1]) + "|"
+		
+		#Check which team won
+		if team1arr[-1] > team2arr[-1]
+			if team1arr[4] == team_short
+				record["wins"] += 1
+			else
+				record["losses"] += 1
+			end
+			winner="home"
+		else
+			if team2arr[4] == team_short
+				record["wins"] += 1
+			else
+				record["losses"] += 1
+			end
+			winner="away"
+		end
+		
+		if winner=="home"
+			client.channels_setTopic(channel: "#{channel}", topic: "Season Record: #{record["wins"]}-#{record["losses"]} | #{team2arr[4]} #{team2arr[-1]} - #{team1arr[4]} #{team1arr[-1]}")
+		else
 
-
+			client.channels_setTopic(channel: "#{channel}", topic: "Season Record: #{record["wins"]}-#{record["losses"]} | #{team1arr[4]} #{team1arr[-1]} - #{team2arr[4]} #{team2arr[-1]}")
+		end
 		client.chat_postMessage(channel: "#{channel}",
 		text:"```-------------------------------------\n"\
 		"| Team | Q1 | Q2 | Q3 | Q4 | FINAL  |\n"\
@@ -115,3 +141,6 @@ end
 games_source = File.open('games.json', 'w')
 games_source.write(games.to_json)
 games_source.close
+record_source = File.open('record.json', 'w')
+record_source.write(record.to_json)
+record_source.close
