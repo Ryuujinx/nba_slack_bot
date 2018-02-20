@@ -50,7 +50,12 @@ def get_game(gameid)
 	req['Cookie: s_cc=true'] =  's_fid=668A9A1A2DE9E558-3B8DA9609553CC63; s_sq=%5B%5BB%5D%5D'
 	req['Connection'] =  'keep-alive'
 	http = Net::HTTP.new(url.host, url.port)
-	res = http.request(req)
+	begin
+		http.set_debug_output $stdout	
+		res = http.request(req)
+	rescue 
+		retry
+	end
 	return res.body
 end
 
@@ -65,7 +70,12 @@ def get_season(team,season)
 	req['Cookie: s_cc=true'] =  's_fid=668A9A1A2DE9E558-3B8DA9609553CC63; s_sq=%5B%5BB%5D%5D'
 	req['Connection'] =  'keep-alive'
 	http = Net::HTTP.new(url.host, url.port)
-	res = http.request(req)
+	begin
+		http.set_debug_output $stdout	
+		res = http.request(req)
+	rescue 
+		retry
+	end
 	return res.body
 end
 
@@ -83,58 +93,53 @@ client = Slack::Web::Client.new
 client.auth_test
 teamsum["resultSets"][0]["rowSet"].each do |game|
 	if ! games.include?(game[1])
-		games << game[1]
 		boxscore = JSON.load(get_game(game[1]))
-		gamestats = boxscore["resultSets"][5]
+		if boxscore["resultSets"][0]["rowSet"][0][4] == "Final"
+			games << game[1]
+			gamestats = boxscore["resultSets"][5]
 
-		#Build tables
-		#Figure out top row
-		team1arr = gamestats["rowSet"][0]
-		team1 = "|#{team1arr[4]}   |"
-		team1q1 = "#{team1arr[8]}" + " " * check_quarter(team1arr[8]) + "|"
-		team1q2 = "#{team1arr[9]}" + " " * check_quarter(team1arr[9]) + "|"
-		team1q3 = "#{team1arr[10]}" + " " * check_quarter(team1arr[10]) + "|"
-		team1q4 = "#{team1arr[11]}" + " " * check_quarter(team1arr[11]) + "|"
-		team1f = "#{team1arr[-1]}" + " " * check_final(team1arr[-1]) + "|"
-		#Bottom Row
-		team2arr = gamestats["rowSet"][1]
-		team2 = "|#{team2arr[4]}   |"
-		team2q1 = "#{team2arr[8]}" + " " * check_quarter(team2arr[8]) + "|"
-		team2q2 = "#{team2arr[9]}" + " " * check_quarter(team2arr[9]) + "|"
-		team2q3 = "#{team2arr[10]}" + " " * check_quarter(team2arr[10]) + "|"
-		team2q4 = "#{team2arr[11]}" + " " * check_quarter(team2arr[11]) + "|"
-		team2f = "#{team2arr[-1]}" + " " * check_final(team2arr[-1]) + "|"
+			#Build tables
+			#Figure out top row
+			team1arr = gamestats["rowSet"][0]
+			team1 = "|#{team1arr[4]}   |"
+			team1q1 = "#{team1arr[8]}" + " " * check_quarter(team1arr[8]) + "|"
+			team1q2 = "#{team1arr[9]}" + " " * check_quarter(team1arr[9]) + "|"
+			team1q3 = "#{team1arr[10]}" + " " * check_quarter(team1arr[10]) + "|"
+			team1q4 = "#{team1arr[11]}" + " " * check_quarter(team1arr[11]) + "|"
+			team1f = "#{team1arr[-1]}" + " " * check_final(team1arr[-1]) + "|"
+			#Bottom Row
+			team2arr = gamestats["rowSet"][1]
+			team2 = "|#{team2arr[4]}   |"
+			team2q1 = "#{team2arr[8]}" + " " * check_quarter(team2arr[8]) + "|"
+			team2q2 = "#{team2arr[9]}" + " " * check_quarter(team2arr[9]) + "|"
+			team2q3 = "#{team2arr[10]}" + " " * check_quarter(team2arr[10]) + "|"
+			team2q4 = "#{team2arr[11]}" + " " * check_quarter(team2arr[11]) + "|"
+			team2f = "#{team2arr[-1]}" + " " * check_final(team2arr[-1]) + "|"
 		
-		#Check which team won
-		if team1arr[-1] > team2arr[-1]
-			if team1arr[4] == team_short
-				record["wins"] += 1
+			#Check which team won
+			if team1arr[-1] > team2arr[-1]
+				if team1arr[4] == team_short
+					record["wins"] += 1
+				else
+					record["losses"] += 1
+				end
 			else
-				record["losses"] += 1
+				if team2arr[4] == team_short
+					record["wins"] += 1
+				else
+					record["losses"] += 1
+				end
 			end
-			winner="home"
-		else
-			if team2arr[4] == team_short
-				record["wins"] += 1
-			else
-				record["losses"] += 1
-			end
-			winner="away"
-		end
 		
-		if winner=="home"
 			client.channels_setTopic(channel: "#{channel}", topic: "Season Record: #{record["wins"]}-#{record["losses"]} | #{team2arr[4]} #{team2arr[-1]} - #{team1arr[4]} #{team1arr[-1]}")
-		else
-
-			client.channels_setTopic(channel: "#{channel}", topic: "Season Record: #{record["wins"]}-#{record["losses"]} | #{team1arr[4]} #{team1arr[-1]} - #{team2arr[4]} #{team2arr[-1]}")
+			client.chat_postMessage(channel: "#{channel}",
+			text:"```-------------------------------------\n"\
+			"| Team | Q1 | Q2 | Q3 | Q4 | FINAL  |\n"\
+			"#{team1}#{team1q1}#{team1q2}#{team1q3}#{team1q4}#{team1f}\n"\
+			"#{team2}#{team2q1}#{team2q2}#{team2q3}#{team2q4}#{team2f}\n"\
+			"-------------------------------------```\n"\
+			"http://www.nba.com/spurs/stats/team", as_user: true)
 		end
-		client.chat_postMessage(channel: "#{channel}",
-		text:"```-------------------------------------\n"\
-		"| Team | Q1 | Q2 | Q3 | Q4 | FINAL  |\n"\
-		"#{team1}#{team1q1}#{team1q2}#{team1q3}#{team1q4}#{team1f}\n"\
-		"#{team2}#{team2q1}#{team2q2}#{team2q3}#{team2q4}#{team2f}\n"\
-		"-------------------------------------```\n"\
-		"http://www.nba.com/spurs/stats/team", as_user: true)
 	end
 end
 
