@@ -12,29 +12,29 @@ season = SEASON
 channel = SLACK_CHANNEL
 
 Slack.configure do |config|
-  config.token = API_TOKEN
+	config.token = API_TOKEN
 end
 
 #Determines number of spaces needed for quarter
 def check_quarter(score)
-        if score > 9
-                if score < 100
-                        return 2
-                else
-                        return 1
-                end
-        else
-                return 3
-        end
+	if score > 9
+		if score < 100
+			return 2
+		else
+			return 1
+		end
+	else
+		return 3
+	end
 end
 
 #Determines number of spaces needed for final
 def check_final(score)
-        if score > 99
-                return 5
-        else
-                return 6
-        end
+	if score > 99
+		return 5
+	else
+		return 6
+	end
 end
 
 
