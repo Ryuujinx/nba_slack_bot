@@ -40,7 +40,7 @@ end
 
 #gameid="0021700046"
 def get_game(gameid)
-	url = URI.parse("http://stats.nba.com/stats/boxscoresummaryv2/?GameID=#{gameid}")
+	url = URI.parse("https://stats.nba.com/stats/boxscoresummaryv2/?GameID=#{gameid}")
 	req = Net::HTTP::Get.new(url)
 	req['Accept-Language'] = 'en-US,en;q=0.8'
 	req['Upgrade-Insecure-Requests'] =  '1'
@@ -51,7 +51,8 @@ def get_game(gameid)
 	req['Connection'] =  'keep-alive'
 	http = Net::HTTP.new(url.host, url.port)
 	begin
-		http.set_debug_output $stdout	
+		http.set_debug_output $stdout
+    http.use_ssl = true
 		res = http.request(req)
 	rescue 
 		retry
@@ -60,18 +61,19 @@ def get_game(gameid)
 end
 
 def get_season(team,season)
-	url = URI.parse("http://stats.nba.com/stats/TeamGameLog/?TeamID=#{team}&Season=#{season}&SeasonType=Regular%20Season")
+	url = URI.parse("https://stats.nba.com/stats/TeamGameLog/?TeamID=#{team}&Season=#{season}&SeasonType=Regular%20Season")
 	req = Net::HTTP::Get.new(url)
-	req['Accept-Language'] = 'en-US,en;q=0.8'
+	req['Accept-Language'] = 'en-US,en;q=0.9'
 	req['Upgrade-Insecure-Requests'] =  '1'
 	req['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
 	req['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'
 	req['Cache-Control'] = 'max-age=0'
-	req['Cookie: s_cc=true'] =  's_fid=668A9A1A2DE9E558-3B8DA9609553CC63; s_sq=%5B%5BB%5D%5D'
+	req['Cookie:'] =  'ak_bmsc=393B00985E942B00A8792ACE28664361173230C7A32E00009293C85B6D58191E~plrVPii6/BA7ydLFrBwX6TlJEyX28AmRJ2pz8m9yPGRZAm+AKl9JvT7f1YA6RO/ToTcdANt9l5TyjNKLeGwQ+gn6ePqUtAZGo8SrpyIkni4zSxovFoDU2jBrrdHK41iTvDHqGcvkorx9+ss0HIvEt79kCC9fbIJhUVHZ5HsrtTdqp01Zy3b72fkkT2z2FfUXroZNkgUb41PMH9eAcLBGt4rWUXP9ZJhpAKYwM+C/WsMkSoNKkZJ5b85UI4JMUe8SII; bm_sv=30417043A091EECCA62150DBCB7DA6A1~HG1pbz5p/KBjJQ6GBlE3D1+5tE/wljvAhBABLGO9K17hxJFf1SySMOdLXiZmTym3kJ+wiZSzTjnJ8mDVk0kHwDNnNmL+GfWNRlG4Swjdk0J5FPBpsF9PBwrQid6rbKnWev3cwJSMWPZc7iTpA2n5hw=='
 	req['Connection'] =  'keep-alive'
 	http = Net::HTTP.new(url.host, url.port)
 	begin
-		http.set_debug_output $stdout	
+		http.set_debug_output $stdout
+		http.use_ssl = true
 		res = http.request(req)
 	rescue 
 		retry
